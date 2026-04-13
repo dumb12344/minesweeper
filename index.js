@@ -13,12 +13,14 @@ const gameStates = {
     "inProgress": 0
 }
 // Initialization
+/** @type {HTMLCanvasElement} */
 let canvas = document.getElementById("canvas");
+/** @type {HTMLImageElement} */
+let flagImage = document.getElementById("flag");
 canvas.setAttribute("width", window.innerWidth);
 canvas.setAttribute("height", window.innerHeight);
 canvas.addEventListener("click", handleClick);
 canvas.addEventListener("contextmenu", handleContext);
-/** @type {CanvasRenderingContext2D} */
 let ctx = canvas.getContext("2d");
 let mineCount = 10;
 let sizeX = 10;
@@ -106,8 +108,9 @@ function reveal(x, y) {
     else if (tiles[y][x] == 0) {
         tiles[y][x] = 4;
         state = gameStates.lose;
-        for (let i = 0; i < sizeX; i++){
+        for (let i = 0; i < sizeX; i++) {
             for (let j = 0; j < sizeY; j++) {
+                // unflag and then reveal all tiles
                 if (tiles[j][i] == 2 || tiles[j][i] == 3) tiles[j][i] -= 2;
                 reveal(i, j);                
             }
@@ -119,14 +122,20 @@ function reveal(x, y) {
 function checkWin() {
     if (state != 0) return;
     let counter = 0;
-    for (let i = 0; i < sizeX; i++){
+    for (let i = 0; i < sizeX; i++) {
         for (let j = 0; j < sizeY; j++) {
-            if (tiles[j][i] == 0 || tiles[j][i] == 1 || tiles[j][i] == 2 || tiles[j][i] == 3 || tiles[j][i] == 4) {
+            if (tiles[j][i] >= 0 && tiles[j][i] <= 4) {
                 counter++;
             }
         }
     }
     if (counter == mineCount) {
+        // unflag all tiles
+        for (let i = 0; i < sizeX; i++) {
+            for (let j = 0; j < sizeY; j++) {
+                if (tiles[j][i] == 2 || tiles[j][i] == 3) tiles[j][i] -= 2;
+            }
+        }
         state = gameStates.win;
         drawBoard();
     }
@@ -158,7 +167,7 @@ function handleContext(event) {
     flag(x, y);
 }
 function drawBoard() {
-    for (let i = 0; i < sizeX; i++){
+    for (let i = 0; i < sizeX; i++) {
         for (let j = 0; j < sizeY; j++) {
             // color tiles
             if (tiles[j][i] == 0 || tiles[j][i] == 1 || tiles[j][i] == 2 || tiles[j][i] == 3) {
@@ -181,9 +190,10 @@ function drawBoard() {
                 ctx.fillText(tiles[j][i] - 5, (i + 0.5) * tileSize, (j + 0.5) * tileSize, tileSize)
             }
             if (tiles[j][i] == 2 || tiles[j][i] == 3) {
-                // red square if flag tile
-                ctx.fillStyle = "#f23607";
-                ctx.fillRect((i + 0.25) * tileSize, (j + 0.25) * tileSize, tileSize / 2, tileSize / 2);
+                // draw flag if flag tile
+                ctx.drawImage(flagImage, i * tileSize, j * tileSize);
+                // ctx.fillStyle = "#f23607";
+                // ctx.fillRect((i + 0.25) * tileSize, (j + 0.25) * tileSize, tileSize / 2, tileSize / 2);
             }
         }
     }
