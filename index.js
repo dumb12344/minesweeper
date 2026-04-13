@@ -1,3 +1,4 @@
+"use strict";
 /** Tile key
  *  0: Hidden mine
  *  1: Hidden blank
@@ -21,6 +22,7 @@ canvas.setAttribute("width", window.innerWidth);
 canvas.setAttribute("height", window.innerHeight);
 canvas.addEventListener("click", handleClick);
 canvas.addEventListener("contextmenu", handleContext);
+addEventListener("keydown", handleKeys);
 let ctx = canvas.getContext("2d");
 let mineCount = 10;
 let sizeX = 10;
@@ -67,7 +69,7 @@ function init(x, y) {
         let canPlace = true;
         for (let i = -1; i <= 1; i++)
             for (let j = -1; j <= 1; j++)
-                if(randomX + i == x || randomY + j == y)
+                if(randomX + i == x && randomY + j == y)
                     canPlace = false
         if (tiles[randomY][randomX] == 1 && canPlace) {
             tiles[randomY][randomX] = 0;
@@ -108,13 +110,16 @@ function reveal(x, y) {
     else if (tiles[y][x] == 0) {
         tiles[y][x] = 4;
         state = gameStates.lose;
-        for (let i = 0; i < sizeX; i++) {
-            for (let j = 0; j < sizeY; j++) {
-                // unflag and then reveal all tiles
-                if (tiles[j][i] == 2 || tiles[j][i] == 3) tiles[j][i] -= 2;
-                reveal(i, j);                
+        drawBoard();
+        window.setTimeout(() => {
+            for (let i = 0; i < sizeX; i++) {
+                for (let j = 0; j < sizeY; j++) {
+                    // unflag and then reveal all tiles
+                    if (tiles[j][i] == 2 || tiles[j][i] == 3) tiles[j][i] -= 2;
+                    reveal(i, j);
+                }
             }
-        }
+        }, 100);
     }
     drawBoard();
     checkWin();
@@ -158,6 +163,17 @@ function handleClick(event) {
     if (!initialized) init(x, y);
     reveal(x, y);
 }
+function handleKeys(event) {
+    if (event.key == "m") {
+        for (let i = 0; i < sizeX; i++) {
+            for (let j = 0; j < sizeY; j++) {
+                if (tiles[j][i] != 0) {
+                    reveal(i, j);
+                }
+            }
+        }
+    }
+}
 function handleContext(event) {
     if (!initialized) return;
     event.preventDefault();
@@ -191,7 +207,7 @@ function drawBoard() {
             }
             if (tiles[j][i] == 2 || tiles[j][i] == 3) {
                 // draw flag if flag tile
-                ctx.drawImage(flagImage, i * tileSize, j * tileSize);
+                ctx.drawImage(flagImage, i * tileSize, j * tileSize, tileSize, tileSize);
                 // ctx.fillStyle = "#f23607";
                 // ctx.fillRect((i + 0.25) * tileSize, (j + 0.25) * tileSize, tileSize / 2, tileSize / 2);
             }
@@ -201,7 +217,17 @@ function drawBoard() {
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillStyle = "black";
+        ctx.font = `${Math.min(tileSize, Math.round(canvas.width / 25))}px JetBrains Mono`;
         ctx.fillText("You Win", tileSize * sizeX / 2, tileSize * sizeY / 2)
+        ctx.fill();
+    }
+    if (state == gameStates.lose) {
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "black";
+        ctx.font = `${Math.min(tileSize, Math.round(canvas.width / 25))}px JetBrains Mono`;
+        ctx.fillText("You Lost", tileSize * sizeX / 2, tileSize * sizeY / 2);
+        ctx.fillText("Reload to try again", tileSize * sizeX / 2, tileSize * (sizeY / 2 + 1));
         ctx.fill();
     }
 }
