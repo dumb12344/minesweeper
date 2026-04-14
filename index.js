@@ -77,10 +77,12 @@ function init(x, y) {
     window.setInterval(drawBoard, 100);
     initialized = true;
 }
-function reveal(x, y, draw = true) {
+function reveal(x, y, draw = true, spread = true) {
     if (state == gameStates.win) return;
     if (x < 0 || x >= sizeX || y < 0 || y >= sizeY) return;
+    // >= 5 is revealed tile
     if (tiles[y][x] >= 5) return;
+    // 1 is no mine
     if (tiles[y][x] == 1) {
         // count surrounding mines
         let counter = 0;
@@ -95,7 +97,7 @@ function reveal(x, y, draw = true) {
         }
         tiles[y][x] = counter + 5;
         // spread if no mines
-        if (counter == 0) {
+        if (counter == 0 && spread) {
             for (let i = -1; i <= 1; i++) {
                 for (let j = -1; j <= 1; j++) {
                     if (!(i == 0 && j == 0))
@@ -104,15 +106,16 @@ function reveal(x, y, draw = true) {
             }
         }
     }
-    // reveal all if you click a mine
+    // 0 is mine
     else if (tiles[y][x] == 0) {
+        // 4 is revealed mine
         tiles[y][x] = 4;
         state = gameStates.lose;
         drawBoard();
         window.setTimeout(() => {
             for (let i = 0; i < sizeX; i++) {
                 for (let j = 0; j < sizeY; j++) {
-                    // unflag and then reveal all tiles
+                    // unflag
                     if (tiles[j][i] == 2 || tiles[j][i] == 3) tiles[j][i] -= 2;
                     reveal(i, j);
                 }
@@ -127,15 +130,16 @@ function checkWin() {
     let counter = 0;
     for (let i = 0; i < sizeX; i++) {
         for (let j = 0; j < sizeY; j++) {
+            // 0-4 hidden or flagged
             if (tiles[j][i] >= 0 && tiles[j][i] <= 4) {
                 counter++;
             }
         }
     }
     if (counter == mineCount) {
-        // unflag all tiles
         for (let i = 0; i < sizeX; i++) {
             for (let j = 0; j < sizeY; j++) {
+                // unflag
                 if (tiles[j][i] == 2 || tiles[j][i] == 3) tiles[j][i] -= 2;
             }
         }
@@ -166,10 +170,12 @@ function handleClick(event) {
 }
 function handleKeys(event) {
     if (event.key == "m") {
+        if (state == gameStates.win) window.location.reload;
+        if (!initialized) init(0, 0);
         for (let i = 0; i < sizeX; i++) {
             for (let j = 0; j < sizeY; j++) {
                 if (tiles[j][i] != 0) {
-                    reveal(i, j);
+                    window.setTimeout(()=>reveal(i, j, true, false),100*(i+j));
                 }
             }
         }
@@ -183,22 +189,7 @@ function handleContext(event) {
     if (x < 0 || x >= sizeX || y < 0 || y >= sizeY) return;
     flag(x, y);
 }
-function drawGreenTiles() {
-    for (let i = 0; i < sizeX; i++) {
-        for (let j = 0; j < sizeY; j++) {
-            if (tiles[j][i] >= 0 && tiles[j][i] <= 3) {
-                ctx.fillStyle = (i % 2 == 0 ^ j % 2 == 0) ? "#a2d149" : "#aad751";
-            }
-            else if (tiles[j][i] == 4) {
-                ctx.fillStyle = "red";
-            }
-            else continue;
-            ctx.fillRect(i * tileSize, j * tileSize, tileSize, tileSize);
-            ctx.fill();
-        }
-    }
-}
-function drawOtherTiles() {
+function drawBlankTiles() {
     for (let i = 0; i < sizeX; i++) {
         for (let j = 0; j < sizeY; j++) {
             ctx.fillStyle = (i % 2 == 0 ^ j % 2 == 0) ? "#d7b899" : "#e5c29f";
@@ -218,21 +209,36 @@ function drawOtherTiles() {
         }
     }
 }
+function drawGreenTiles() {
+    for (let i = 0; i < sizeX; i++) {
+        for (let j = 0; j < sizeY; j++) {
+            if (tiles[j][i] >= 0 && tiles[j][i] <= 3) {
+                ctx.fillStyle = (i % 2 == 0 ^ j % 2 == 0) ? "#a2d149" : "#aad751";
+            }
+            else if (tiles[j][i] == 4) {
+                ctx.fillStyle = "red";
+            }
+            else continue;
+            ctx.fillRect(i * tileSize, j * tileSize, tileSize, tileSize);
+            ctx.fill();
+        }
+    }
+}
 function drawBoard() {
-    drawOtherTiles();
+    drawBlankTiles();
     drawGreenTiles();
     for (let i = 0; i < sizeX; i++) {
         for (let j = 0; j < sizeY; j++) {
+            // > 5 is number tile
             if (tiles[j][i] > 5) {
-                // text if number tile
                 ctx.fillStyle = numColors[tiles[j][i] - 6];
                 ctx.font = `bold ${tileSize / 1.3}px ${gameFont}`
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle"
                 ctx.fillText(tiles[j][i] - 5, (i + 0.5) * tileSize, (j + 0.5) * tileSize, tileSize)
             }
+            // 2 & 3 are flag tiles
             if (tiles[j][i] == 2 || tiles[j][i] == 3) {
-                // draw flag if flag tile
                 let flagSize = 0.8;
                 ctx.drawImage(flagImage, (i + (1 - flagSize) / 2) * tileSize, (j + (1 - flagSize) / 2) * tileSize, flagSize * tileSize, flagSize * tileSize);
                 // legacy flag
