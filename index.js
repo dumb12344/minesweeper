@@ -13,6 +13,7 @@ const gameStates = {
     "lose": -1,
     "inProgress": 0
 }
+const gameFont = "Google Sans";//"JetBrains Mono"
 // Initialization
 /** @type {HTMLCanvasElement} */
 let canvas = document.getElementById("canvas");
@@ -50,7 +51,6 @@ let numColors = [
 ];
 if (canvas.width < canvas.height) tileSize = Math.floor(canvas.width / sizeX);
 else tileSize = Math.floor(canvas.height / sizeY);
-
 // initialize tiles array and draw initial state
 for (let j = 0; j < sizeY; j++) {
     tiles[j] = [];
@@ -79,7 +79,7 @@ function init(x, y) {
     window.setInterval(drawBoard, 100);
     initialized = true;
 }
-function reveal(x, y) {
+function reveal(x, y, draw = true) {
     if (state == gameStates.win) return;
     if (x < 0 || x >= sizeX || y < 0 || y >= sizeY) return;
     if (tiles[y][x] >= 5) return;
@@ -101,7 +101,7 @@ function reveal(x, y) {
             for (let i = -1; i <= 1; i++) {
                 for (let j = -1; j <= 1; j++) {
                     if (!(i == 0 && j == 0))
-                    window.setTimeout(() => reveal(x + i, y + j), 100);
+                    window.setTimeout(() => reveal(x + i, y + j, false), 10);
                 }
             }
         }
@@ -121,7 +121,7 @@ function reveal(x, y) {
             }
         }, 100);
     }
-    drawBoard();
+    if(draw) drawBoard();
     checkWin();
 }
 function checkWin() {
@@ -157,6 +157,9 @@ function flag(x, y) {
     }
 }
 function handleClick(event) {
+    if (state == gameStates.lose || state == gameStates.win) {
+        window.location.reload();
+    }
     let x = Math.floor(event.clientX / tileSize);
     let y = Math.floor(event.clientY / tileSize);
     if (x < 0 || x >= sizeX || y < 0 || y >= sizeY) return;
@@ -182,32 +185,59 @@ function handleContext(event) {
     if (x < 0 || x >= sizeX || y < 0 || y >= sizeY) return;
     flag(x, y);
 }
-function drawBoard() {
+function drawGreenTiles() {
     for (let i = 0; i < sizeX; i++) {
         for (let j = 0; j < sizeY; j++) {
-            // color tiles
-            if (tiles[j][i] == 0 || tiles[j][i] == 1 || tiles[j][i] == 2 || tiles[j][i] == 3) {
+            if (tiles[j][i] >= 0 && tiles[j][i] <= 3) {
                 ctx.fillStyle = (i % 2 == 0 ^ j % 2 == 0) ? "#a2d149" : "#aad751";
             }
             else if (tiles[j][i] == 4) {
                 ctx.fillStyle = "red";
             }
-            else {
-                ctx.fillStyle = (i % 2 == 0 ^ j % 2 == 0) ? "#d7b899" : "#e5c29f";
-            }
+            else continue;
             ctx.fillRect(i * tileSize, j * tileSize, tileSize, tileSize);
             ctx.fill();
+        }
+    }
+}
+function drawOtherTiles() {
+    for (let i = 0; i < sizeX; i++) {
+        for (let j = 0; j < sizeY; j++) {
+            ctx.fillStyle = (i % 2 == 0 ^ j % 2 == 0) ? "#d7b899" : "#e5c29f";
+            ctx.fillRect(i * tileSize, j * tileSize, tileSize, tileSize);
+            ctx.fill();
+            // outline
+            for (let k = -1; k <= 1; k++) {
+                for (let l = -1; l <= 1; l++) {
+                    if (i + l < 0 || i + l >= sizeX || j + k < 0 || j + k >= sizeY) continue;
+                    if (tiles[j + k][i + l] >= 0 && tiles[j + k][i + l] <= 3) {
+                        ctx.strokeStyle = "#87af3a"
+                        ctx.lineWidth = tileSize / 7.5;
+                        ctx.strokeRect((i + l) * tileSize, (j + k) * tileSize, tileSize, tileSize);
+                    }
+                }
+            }
+        }
+    }
+}
+function drawBoard() {
+    drawOtherTiles();
+    drawGreenTiles();
+    for (let i = 0; i < sizeX; i++) {
+        for (let j = 0; j < sizeY; j++) {
             if (tiles[j][i] > 5) {
                 // text if number tile
                 ctx.fillStyle = numColors[tiles[j][i] - 6];
-                ctx.font = `${tileSize}px JetBrains Mono`
+                ctx.font = `bold ${tileSize / 1.3}px ${gameFont}`
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle"
                 ctx.fillText(tiles[j][i] - 5, (i + 0.5) * tileSize, (j + 0.5) * tileSize, tileSize)
             }
             if (tiles[j][i] == 2 || tiles[j][i] == 3) {
                 // draw flag if flag tile
-                ctx.drawImage(flagImage, i * tileSize, j * tileSize, tileSize, tileSize);
+                let flagSize = 0.8;
+                ctx.drawImage(flagImage, (i + (1 - flagSize) / 2) * tileSize, (j + (1 - flagSize) / 2) * tileSize, flagSize * tileSize, flagSize * tileSize);
+                // legacy flag
                 // ctx.fillStyle = "#f23607";
                 // ctx.fillRect((i + 0.25) * tileSize, (j + 0.25) * tileSize, tileSize / 2, tileSize / 2);
             }
@@ -217,17 +247,18 @@ function drawBoard() {
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillStyle = "black";
-        ctx.font = `${Math.min(tileSize, Math.round(canvas.width / 25))}px JetBrains Mono`;
-        ctx.fillText("You Win", tileSize * sizeX / 2, tileSize * sizeY / 2)
+        ctx.font = `${Math.min(tileSize, Math.round(canvas.width / 25))}px ${gameFont}`;
+        ctx.fillText("You Won!", tileSize * sizeX / 2, tileSize * (sizeY / 2 - 0.5));
+        ctx.fillText("Click to play again", tileSize * sizeX / 2, tileSize * (sizeY / 2 + 0.5));
         ctx.fill();
     }
     if (state == gameStates.lose) {
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillStyle = "black";
-        ctx.font = `${Math.min(tileSize, Math.round(canvas.width / 25))}px JetBrains Mono`;
-        ctx.fillText("You Lost", tileSize * sizeX / 2, tileSize * sizeY / 2);
-        ctx.fillText("Reload to try again", tileSize * sizeX / 2, tileSize * (sizeY / 2 + 1));
+        ctx.font = `${Math.min(tileSize, Math.round(canvas.width / 25))}px ${gameFont}`;
+        ctx.fillText("You Lost", tileSize * sizeX / 2, tileSize * (sizeY / 2 - 0.5));
+        ctx.fillText("Click to try again", tileSize * sizeX / 2, tileSize * (sizeY / 2 + 0.5));
         ctx.fill();
     }
 }
