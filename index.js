@@ -13,7 +13,22 @@ const gameStates = {
     "lose": -1,
     "inProgress": 0
 }
-const gameFont = "Google Sans";//"JetBrains Mono"
+const gameFont = "Google Sans"; // "JetBrains Mono"
+let mineCount = 10;
+let sizeX = 10;
+let sizeY = 8;
+let tileSize = 10;
+const numColors = [
+    "#1976d2",
+    "#388e3c",
+    "#d32f2f",
+    "#7b1fa2",
+    "#ff8f00",
+    "#0097a7",
+    "#424242",
+    "#9e9e9e"
+];
+let state = gameStates.inProgress;
 // Initialization
 /** @type {HTMLCanvasElement} */
 let canvas = document.getElementById("canvas");
@@ -25,11 +40,7 @@ canvas.addEventListener("click", handleClick);
 canvas.addEventListener("contextmenu", handleContext);
 addEventListener("keydown", handleKeys);
 let ctx = canvas.getContext("2d");
-let mineCount = 10;
-let sizeX = 10;
-let sizeY = 8;
 let initialized = false;
-let tiles = [];
 // default is easy preset
 // medium is ?x=18&y=14&c=40
 // hard is ?x=24&y=20&c=99
@@ -37,30 +48,17 @@ const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.has("c")) mineCount = urlParams.get("c");
 if (urlParams.has("x")) sizeX = urlParams.get("x");
 if (urlParams.has("y")) sizeY = urlParams.get("y");
-let tileSize = 10;
-let state = gameStates.inProgress;
-let numColors = [
-    "#1976d2",
-    "#388e3c",
-    "#d32f2f",
-    "#7b1fa2",
-    "#ff8f00",
-    "#0097a7",
-    "#424242",
-    "#9e9e9e"
-];
 if (canvas.width < canvas.height) tileSize = Math.floor(canvas.width / sizeX);
 else tileSize = Math.floor(canvas.height / sizeY);
-// initialize tiles array and draw initial state
+// initialize tiles array
+let tiles = [];
 for (let j = 0; j < sizeY; j++) {
     tiles[j] = [];
     for (let i = 0; i < sizeX; i++) {
         tiles[j][i] = 1;
-        ctx.fillStyle = (i % 2 == 0 ^ j % 2 == 0) ? "#a2d149" : "#aad751";
-        ctx.fillRect(i * tileSize, j * tileSize, tileSize, tileSize);
-        ctx.fill();
     }
 }
+drawBoard();
 function init(x, y) {
     // place mines
     for (let i = 0; i < mineCount;) {
