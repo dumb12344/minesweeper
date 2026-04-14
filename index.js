@@ -41,7 +41,7 @@ canvas.addEventListener("contextmenu", handleContext);
 addEventListener("keydown", handleKeys);
 let ctx = canvas.getContext("2d");
 let initialized = false;
-// default is easy preset
+// default is easy preset ?x=10&y=8&c=10
 // medium is ?x=18&y=14&c=40
 // hard is ?x=24&y=20&c=99
 const urlParams = new URLSearchParams(window.location.search);
@@ -68,7 +68,7 @@ function init(x, y) {
         for (let i = -1; i <= 1; i++)
             for (let j = -1; j <= 1; j++)
                 if(randomX + i == x && randomY + j == y)
-                    canPlace = false
+                    canPlace = false;
         if (tiles[randomY][randomX] == 1 && canPlace) {
             tiles[randomY][randomX] = 0;
             i++;
@@ -151,17 +151,14 @@ function flag(x, y) {
     checkWin();
     if (state != gameStates.inProgress) return;
     if (x < 0 || x >= sizeX || y < 0 || y >= sizeY) return;
-    if (tiles[y][x] == 0 || tiles[y][x] == 1) {
-        tiles[y][x] += 2
-    }
-    else if (tiles[y][x] == 2 || tiles[y][x] == 3) {
-        tiles[y][x] -= 2
-    }
+    if (tiles[y][x] == 0 || tiles[y][x] == 1)
+        tiles[y][x] += 2;
+    else if (tiles[y][x] == 2 || tiles[y][x] == 3)
+        tiles[y][x] -= 2;
 }
 function handleClick(event) {
-    if (state == gameStates.lose || state == gameStates.win) {
+    if (state == gameStates.lose || state == gameStates.win)
         window.location.reload();
-    }
     let x = Math.floor(event.clientX / tileSize);
     let y = Math.floor(event.clientY / tileSize);
     if (x < 0 || x >= sizeX || y < 0 || y >= sizeY) return;
@@ -170,16 +167,67 @@ function handleClick(event) {
 }
 function handleKeys(event) {
     if (event.key == "m") {
-        if (state == gameStates.win) window.location.reload;
-        if (!initialized) init(0, 0);
+        let animation = Math.floor(Math.random() * 7);
+        if (state == gameStates.lose || state == gameStates.win)
+            window.location.reload();
+        if (!initialized) {
+            switch (animation) {
+                case 0:
+                    init(0, 0);
+                    break;
+                case 1:
+                    init(sizeX / 2, sizeY / 2);
+                    break;
+                case 2:
+                    init(0, sizeY / 2);
+                    break;
+                case 3:
+                    init(sizeX / 2, 0);
+                    break;
+                default:
+                    init(0, 0);
+                    break;
+            }
+        }
         for (let i = 0; i < sizeX; i++) {
             for (let j = 0; j < sizeY; j++) {
                 if (tiles[j][i] != 0) {
-                    window.setTimeout(()=>reveal(i, j, true, false),100*(i+j));
+                    let time = 0;
+                    let method = () => reveal(i, j, true, false);
+                    switch (animation) {
+                        case 0:
+                            time = 100 * (i + j);
+                            break;
+                        case 1:
+                            time = 100 * Math.sqrt((i - sizeX / 2) ** 2 + (j - sizeY / 2) ** 2);
+                            break;
+                        case 2:
+                            time = 100 * i;
+                            break;
+                        case 3:
+                            time = 100 * j;
+                            break;
+                        case 4:
+                            time = 0;
+                            method = () => reveal(i, j, false, false);
+                            break;
+                        case 5:
+                            time = 500 * ((i + j) % 2);
+                            method = () => reveal(i, j, false, false);
+                            break;
+                        case 6:
+                            time = 300 * ((i + j) % (sizeX / 3));
+                            method = () => reveal(i, j, false, false);
+                            break;
+                    }
+                    window.setTimeout(method, time);
                 }
             }
         }
     }
+    if (event.key == " ")
+        if (state == gameStates.lose || state == gameStates.win)
+            window.location.reload();
 }
 function handleContext(event) {
     if (!initialized) return;
@@ -200,7 +248,7 @@ function drawBlankTiles() {
                 for (let l = -1; l <= 1; l++) {
                     if (i + l < 0 || i + l >= sizeX || j + k < 0 || j + k >= sizeY) continue;
                     if (tiles[j + k][i + l] >= 0 && tiles[j + k][i + l] <= 3) {
-                        ctx.strokeStyle = "#87af3a"
+                        ctx.strokeStyle = "#87af3a";
                         ctx.lineWidth = tileSize / 7.5;
                         ctx.strokeRect((i + l) * tileSize, (j + k) * tileSize, tileSize, tileSize);
                     }
@@ -232,9 +280,9 @@ function drawBoard() {
             // > 5 is number tile
             if (tiles[j][i] > 5) {
                 ctx.fillStyle = numColors[tiles[j][i] - 6];
-                ctx.font = `bold ${tileSize / 1.3}px ${gameFont}`
+                ctx.font = `bold ${tileSize / 1.3}px ${gameFont}`;
                 ctx.textAlign = "center";
-                ctx.textBaseline = "middle"
+                ctx.textBaseline = "middle";
                 ctx.fillText(tiles[j][i] - 5, (i + 0.5) * tileSize, (j + 0.5) * tileSize, tileSize)
             }
             // 2 & 3 are flag tiles
