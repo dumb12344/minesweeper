@@ -239,7 +239,7 @@ function handleKeys(event) {
                             draw = false;
                             break;
                         case 7:
-                            time = 300 * ((i + j) % (sizeX / 3));
+                            time = 200 * ((i + j) % (sizeX / 3));
                             draw = false;
                             break;
                     }
