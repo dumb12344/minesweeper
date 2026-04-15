@@ -82,6 +82,8 @@ function init(x = 0, y = 0) {
     initialized = true;
 }
 function restart() {
+    if (!urlParams.has("a"))
+        animation = Math.floor(Math.random() * 7);
     state = gameStates.inProgress;
     initialized = false;
     clearInterval(drawInterval);
