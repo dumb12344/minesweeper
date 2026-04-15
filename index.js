@@ -18,7 +18,7 @@ let mineCount = 10;
 let sizeX = 10;
 let sizeY = 8;
 let tileSize = 10;
-let animation = Math.floor(Math.random() * 7);
+let animation = Math.floor(Math.random() * 8);
 const numColors = [
     "#1976d2",
     "#388e3c",
@@ -83,7 +83,7 @@ function init(x = 0, y = 0) {
 }
 function restart() {
     if (!urlParams.has("a"))
-        animation = Math.floor(Math.random() * 7);
+        animation = Math.floor(Math.random() * 8);
     state = gameStates.inProgress;
     initialized = false;
     clearInterval(drawInterval);
@@ -196,9 +196,12 @@ function handleKeys(event) {
                     init(sizeX / 2, sizeY / 2);
                     break;
                 case 2:
-                    init(0, sizeY / 2);
+                    init(sizeX / 2, sizeY / 2);
                     break;
                 case 3:
+                    init(0, sizeY / 2);
+                    break;
+                case 4:
                     init(sizeX / 2, 0);
                     break;
                 default:
@@ -210,40 +213,43 @@ function handleKeys(event) {
             for (let j = 0; j < sizeY; j++) {
                 if (tiles[j][i] != 0) {
                     let time = 0;
-                    let method = () => reveal(i, j, true, false);
+                    let draw = true;
                     switch (animation) {
                         case 0:
-                            time = 100 * (i + j);
+                            time = 0;
+                            draw = false;
                             break;
                         case 1:
-                            time = 100 * Math.sqrt((i - sizeX / 2) ** 2 + (j - sizeY / 2) ** 2);
+                            time = 100 * (Math.sqrt((sizeX / 2) ** 2 + (sizeY / 2) ** 2) - Math.sqrt((i - sizeX / 2) ** 2 + (j - sizeY / 2) ** 2));
                             break;
                         case 2:
-                            time = 100 * i;
+                            time = 100 * Math.sqrt((i - sizeX / 2) ** 2 + (j - sizeY / 2) ** 2);
                             break;
                         case 3:
-                            time = 100 * j;
+                            time = 100 * i;
                             break;
                         case 4:
-                            time = 0;
-                            method = () => reveal(i, j, false, false);
+                            time = 100 * j;
                             break;
                         case 5:
-                            time = 500 * ((i + j) % 2);
-                            method = () => reveal(i, j, false, false);
+                            time = 100 * (i + j);
                             break;
                         case 6:
+                            time = 500 * ((i + j) % 2);
+                            draw = false;
+                            break;
+                        case 7:
                             time = 300 * ((i + j) % (sizeX / 3));
-                            method = () => reveal(i, j, false, false);
+                            draw = false;
                             break;
                     }
-                    window.setTimeout(method, time);
+                    window.setTimeout(() => reveal(i, j, draw, false), time);
                 }
             }
         }
     }
     if(event.key == ",") {
-        handleKeys({"key":"m"});
+        restart();
         handleKeys({"key":"m"});
     }
     if (event.key == "r")
