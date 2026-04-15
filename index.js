@@ -18,6 +18,7 @@ let mineCount = 10;
 let sizeX = 10;
 let sizeY = 8;
 let tileSize = 10;
+let animation = Math.floor(Math.random() * 7);
 const numColors = [
     "#1976d2",
     "#388e3c",
@@ -29,6 +30,7 @@ const numColors = [
     "#9e9e9e"
 ];
 let state = gameStates.inProgress;
+let drawInterval;
 // Initialization
 /** @type {HTMLCanvasElement} */
 let canvas = document.getElementById("canvas");
@@ -48,7 +50,8 @@ const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.has("c")) mineCount = urlParams.get("c");
 if (urlParams.has("x")) sizeX = urlParams.get("x");
 if (urlParams.has("y")) sizeY = urlParams.get("y");
-if (canvas.width < canvas.height) tileSize = Math.floor(canvas.width / sizeX);
+if (urlParams.has("a")) animation = parseInt(urlParams.get("a"));
+if (canvas.width / sizeX < canvas.height / sizeY) tileSize = Math.floor(canvas.width / sizeX);
 else tileSize = Math.floor(canvas.height / sizeY);
 // initialize tiles array
 let tiles = [];
@@ -59,7 +62,8 @@ for (let j = 0; j < sizeY; j++) {
     }
 }
 drawBoard();
-function init(x, y) {
+function init(x = 0, y = 0) {
+    if (drawInterval) clearInterval(drawInterval);
     // place mines
     for (let i = 0; i < mineCount;) {
         let randomX = Math.floor(Math.random() * sizeX);
@@ -74,8 +78,21 @@ function init(x, y) {
             i++;
         }
     }
-    window.setInterval(drawBoard, 100);
+    drawInterval = window.setInterval(drawBoard, 100);
     initialized = true;
+}
+function restart() {
+    state = gameStates.inProgress;
+    initialized = false;
+    clearInterval(drawInterval);
+    tiles = [];
+    for (let j = 0; j < sizeY; j++) {
+        tiles[j] = [];
+        for (let i = 0; i < sizeX; i++) {
+            tiles[j][i] = 1;
+        }
+    }
+    drawBoard();
 }
 function reveal(x, y, draw = true, spread = true) {
     if (state == gameStates.win) return;
@@ -117,7 +134,7 @@ function reveal(x, y, draw = true, spread = true) {
                 for (let j = 0; j < sizeY; j++) {
                     // unflag
                     if (tiles[j][i] == 2 || tiles[j][i] == 3) tiles[j][i] -= 2;
-                    reveal(i, j);
+                    reveal(i, j, false);
                 }
             }
         }, 100);
@@ -158,7 +175,7 @@ function flag(x, y) {
 }
 function handleClick(event) {
     if (state == gameStates.lose || state == gameStates.win)
-        window.location.reload();
+        window.setTimeout(restart, 100);
     let x = Math.floor(event.clientX / tileSize);
     let y = Math.floor(event.clientY / tileSize);
     if (x < 0 || x >= sizeX || y < 0 || y >= sizeY) return;
@@ -167,14 +184,12 @@ function handleClick(event) {
 }
 function handleKeys(event) {
     if (event.key == "m") {
-        let animation = Math.floor(Math.random() * 7);
-        if (state == gameStates.lose || state == gameStates.win)
-            window.location.reload();
+        if (state == gameStates.lose || state == gameStates.win) {
+            restart();
+            return;
+        }
         if (!initialized) {
             switch (animation) {
-                case 0:
-                    init(0, 0);
-                    break;
                 case 1:
                     init(sizeX / 2, sizeY / 2);
                     break;
@@ -185,7 +200,7 @@ function handleKeys(event) {
                     init(sizeX / 2, 0);
                     break;
                 default:
-                    init(0, 0);
+                    init();
                     break;
             }
         }
@@ -225,9 +240,12 @@ function handleKeys(event) {
             }
         }
     }
-    if (event.key == " ")
-        if (state == gameStates.lose || state == gameStates.win)
-            window.location.reload();
+    if(event.key == ",") {
+        handleKeys({"key":"m"});
+        handleKeys({"key":"m"});
+    }
+    if (event.key == "r")
+        restart();
 }
 function handleContext(event) {
     if (!initialized) return;
